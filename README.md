@@ -16,6 +16,6 @@ no frameworks, no backend, no dependencies.
 
 ## 🚀 Live Demo
 
-👉 **[Open Calculator](https://bara-almustafa.github.io/ip-subnet-calculator/)**
+👉 **[Open Calculator](https://bara-almustafa.github.io/IP-Subnet-Calculator/)**
 
 MIT — free to use, modify, and distribute.
