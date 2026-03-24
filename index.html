@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IP Subnet Calculator</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent2: #3fb950;
+      --danger: #f85149;
+      --text: #c9d1d9;
+      --text-dim: #8b949e;
+      --text-bright: #f0f6fc;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 2.5rem; }
+    header h1 {
+      font-size: 2rem;
+      color: var(--text-bright);
+      letter-spacing: -0.5px;
+    }
+    header h1 span { color: var(--accent); }
+    header p { color: var(--text-dim); margin-top: 0.4rem; font-size: 0.95rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .card h2 {
+      font-size: 1rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.6rem;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media(max-width:560px){ .input-grid { grid-template-columns: 1fr; } }
+
+    .field label {
+      display: block;
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .field input, .field select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      color: var(--text-bright);
+      font-size: 1rem;
+      font-family: 'Courier New', monospace;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus, .field select:focus { border-color: var(--accent); }
+    .field input.error { border-color: var(--danger); }
+
+    .btn-row { display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap; }
+    button {
+      padding: 0.6rem 1.4rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    button:active { transform: scale(0.97); }
+    .btn-calc { background: var(--accent); color: #0d1117; }
+    .btn-clear { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    button:hover { opacity: 0.88; }
+
+    .error-msg {
+      color: var(--danger);
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      min-height: 1.2em;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+    .result-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+    }
+    .result-item .label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.3rem;
+    }
+    .result-item .value {
+      font-family: 'Courier New', monospace;
+      font-size: 1rem;
+      color: var(--text-bright);
+      word-break: break-all;
+    }
+    .result-item .value.green { color: var(--accent2); }
+    .result-item .value.blue  { color: var(--accent); }
+    .result-item .value.red   { color: var(--danger); }
+
+    .binary-display {
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+      line-height: 1.8;
+      overflow-x: auto;
+    }
+    .binary-display .net-bits { color: var(--accent); }
+    .binary-display .host-bits { color: var(--accent2); }
+    .binary-display .sep { color: var(--border); }
+    .binary-display .row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .binary-display .row-label { color: var(--text-dim); width: 100px; flex-shrink: 0; font-size: 0.78rem; text-transform: uppercase; }
+
+    .cidr-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+    .cidr-badge {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.3rem 0.65rem;
+      font-size: 0.82rem;
+      font-family: 'Courier New', monospace;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .cidr-badge:hover { border-color: var(--accent); color: var(--accent); }
+    .cidr-badge.active { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,0.08); }
+
+    .hidden { display: none; }
+    .badge-ip-class {
+      display: inline-block;
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .class-a { background: rgba(63,185,80,0.15); color: var(--accent2); border: 1px solid var(--accent2); }
+    .class-b { background: rgba(88,166,255,0.12); color: var(--accent); border: 1px solid var(--accent); }
+    .class-c { background: rgba(248,113,113,0.12); color: #ffa657; border: 1px solid #ffa657; }
+    .class-d { background: rgba(163,113,248,0.12); color: #bc8cff; border: 1px solid #bc8cff; }
+    .class-e { background: rgba(248,81,73,0.12); color: var(--danger); border: 1px solid var(--danger); }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>IP <span>Subnet</span> Calculator</h1>
+    <p>IPv4 subnet mask, CIDR, network & broadcast address, host ranges and more</p>
+  </header>
+
+  <!-- Input Card -->
+  <div class="card">
+    <h2>Input</h2>
+    <div class="input-grid">
+      <div class="field">
+        <label>IP Address</label>
+        <input type="text" id="ipInput" placeholder="192.168.1.0" maxlength="15" autocomplete="off" spellcheck="false"/>
+      </div>
+      <div class="field">
+        <label>Subnet Mask / CIDR</label>
+        <input type="text" id="maskInput" placeholder="255.255.255.0  or  /24" maxlength="18" autocomplete="off" spellcheck="false"/>
+      </div>
+    </div>
+    <div class="error-msg" id="errorMsg"></div>
+    <div class="btn-row">
+      <button class="btn-calc" onclick="calculate()">Calculate</button>
+      <button class="btn-clear" onclick="clearAll()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Quick CIDR Picker -->
+  <div class="card">
+    <h2>Quick CIDR Prefix</h2>
+    <div class="cidr-list" id="cidrList"></div>
+  </div>
+
+  <!-- Results -->
+  <div class="card hidden" id="resultsCard">
+    <h2>Results</h2>
+    <div class="results-grid" id="resultsGrid"></div>
+  </div>
+
+  <!-- Binary Visualization -->
+  <div class="card hidden" id="binaryCard">
+    <h2>Binary Representation</h2>
+    <div class="binary-display" id="binaryDisplay"></div>
+  </div>
+
+  <!-- Subnet Division -->
+  <div class="card hidden" id="divCard">
+    <h2>Subnet Division (first 8 subnets)</h2>
+    <div style="overflow-x:auto">
+      <table id="divTable" style="width:100%;border-collapse:collapse;font-family:'Courier New',monospace;font-size:0.85rem;"></table>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- CIDR Quick Picker ---
+const cidrList = document.getElementById('cidrList');
+for(let i=8;i<=32;i++){
+  const b = document.createElement('div');
+  b.className='cidr-badge';
+  b.textContent='/'+i;
+  b.onclick = ()=>{ setCIDR(i, b); };
+  cidrList.appendChild(b);
+}
+function setCIDR(n, el){
+  document.querySelectorAll('.cidr-badge').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('maskInput').value = '/'+n;
+}
+
+// --- IP Helpers ---
+function ipToInt(ip){ return ip.split('.').reduce((a,o)=>(a<<8)+(+o),0)>>>0; }
+function intToIp(n){ return [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255].join('.'); }
+function ipToBin(ip){ return ip.split('.').map(o=>parseInt(o).toString(2).padStart(8,'0')).join('.'); }
+
+function maskFromCIDR(cidr){
+  if(cidr===0) return 0;
+  return (0xFFFFFFFF << (32-cidr)) >>> 0;
+}
+function cidrFromMask(mask){
+  let n=0, m=mask;
+  while(m&0x80000000){ n++; m=(m<<1)>>>0; }
+  return n;
+}
+function parseMask(raw){
+  raw = raw.trim();
+  if(raw.startsWith('/')) return {cidr: parseInt(raw.slice(1)), mask: maskFromCIDR(parseInt(raw.slice(1)))};
+  if(raw.match(/^\d+$/)){ const c=parseInt(raw); return {cidr:c, mask:maskFromCIDR(c)}; }
+  const parts = raw.split('.'); if(parts.length!==4) return null;
+  if(!parts.every(p=>+p>=0&&+p<=255)) return null;
+  const m = ipToInt(raw);
+  const c = cidrFromMask(m);
+  if(maskFromCIDR(c)!==m) return null;
+  return {cidr:c, mask:m};
+}
+function validateIP(ip){
+  const p=ip.trim().split('.'); if(p.length!==4) return false;
+  return p.every(x=>x!==''&&!isNaN(x)&&+x>=0&&+x<=255);
+}
+function getIPClass(first){
+  if(first<128) return 'A';
+  if(first<192) return 'B';
+  if(first<224) return 'C';
+  if(first<240) return 'D';
+  return 'E';
+}
+
+function calculate(){
+  const ipRaw = document.getElementById('ipInput').value.trim();
+  const maskRaw = document.getElementById('maskInput').value.trim();
+  const errEl = document.getElementById('errorMsg');
+  errEl.textContent='';
+  document.getElementById('ipInput').classList.remove('error');
+  document.getElementById('maskInput').classList.remove('error');
+
+  if(!validateIP(ipRaw)){
+    errEl.textContent='Invalid IP address. Use format: 192.168.1.0';
+    document.getElementById('ipInput').classList.add('error');
+    return;
+  }
+  const parsed = parseMask(maskRaw);
+  if(!parsed || parsed.cidr<0 || parsed.cidr>32){
+    errEl.textContent='Invalid subnet mask. Use 255.255.255.0 or /24 notation.';
+    document.getElementById('maskInput').classList.add('error');
+    return;
+  }
+
+  const {cidr, mask} = parsed;
+  const ip = ipToInt(ipRaw);
+  const network  = (ip & mask)>>>0;
+  const broadcast= (network | (~mask>>>0))>>>0;
+  const hosts    = cidr<=30 ? (broadcast-network-1) : (cidr===31?2:1);
+  const firstHost= cidr<=30 ? network+1 : network;
+  const lastHost = cidr<=30 ? broadcast-1: broadcast;
+  const wildcard = (~mask)>>>0;
+  const ipClass  = getIPClass((ip>>>24)&255);
+
+  // Sync CIDR badge
+  document.querySelectorAll('.cidr-badge').forEach(x=>{
+    x.classList.toggle('active', x.textContent==='/'+cidr);
+  });
+
+  // Results
+  const results = [
+    {label:'IP Address',      value: intToIp(ip),         color:''},
+    {label:'Network Address', value: intToIp(network),    color:'blue'},
+    {label:'Broadcast',       value: intToIp(broadcast),  color:'red'},
+    {label:'Subnet Mask',     value: intToIp(mask),       color:''},
+    {label:'CIDR Notation',   value: '/'+cidr,            color:''},
+    {label:'Wildcard Mask',   value: intToIp(wildcard),   color:''},
+    {label:'First Host',      value: cidr>=31?'N/A':intToIp(firstHost), color:'green'},
+    {label:'Last Host',       value: cidr>=31?'N/A':intToIp(lastHost),  color:'green'},
+    {label:'Usable Hosts',    value: Math.max(0,hosts).toLocaleString(), color:'green'},
+    {label:'Total Addresses', value: Math.pow(2,32-cidr).toLocaleString(), color:''},
+    {label:'IP Class',        value: ipClass,             color:'class'},
+    {label:'IP Type',         value: getIPType(ip),       color:''},
+  ];
+
+  const grid = document.getElementById('resultsGrid');
+  grid.innerHTML = results.map(r=>`
+    <div class="result-item">
+      <div class="label">${r.label}</div>
+      <div class="value ${r.color==='class'?'':r.color}">
+        ${r.color==='class'
+          ? `<span class="badge-ip-class class-${ipClass.toLowerCase()}">${ipClass}</span>`
+          : escHtml(r.value)}
+      </div>
+    </div>`).join('');
+
+  // Binary
+  const ipBin  = toBinDotted(intToIp(ip), cidr);
+  const mskBin = toBinDotted(intToIp(mask), 32);
+  const netBin = toBinDotted(intToIp(network), cidr);
+  const brdBin = toBinDotted(intToIp(broadcast), cidr);
+
+  document.getElementById('binaryDisplay').innerHTML = [
+    rowBin('IP Address', ipBin, cidr),
+    rowBin('Subnet Mask', mskBin, 32),
+    rowBin('Network', netBin, cidr),
+    rowBin('Broadcast', brdBin, cidr),
+  ].join('<br/>');
+
+  // Subnet division
+  buildSubnetTable(network, mask, cidr, broadcast);
+
+  document.getElementById('resultsCard').classList.remove('hidden');
+  document.getElementById('binaryCard').classList.remove('hidden');
+  document.getElementById('divCard').classList.remove('hidden');
+  document.getElementById('resultsCard').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function toBinDotted(ip, cidr){
+  const octets = ip.split('.').map(o=>parseInt(o).toString(2).padStart(8,'0'));
+  return octets.join('.');
+}
+function rowBin(label, binStr, cidr){
+  let count=0; let out='';
+  for(let ch of binStr){
+    if(ch==='.'){out+='<span class="sep">.</span>'; continue;}
+    const cls = count<cidr ? 'net-bits':'host-bits';
+    out+=`<span class="${cls}">${ch}</span>`;
+    count++;
+  }
+  return `<div class="row"><span class="row-label">${label}</span><span>${out}</span></div>`;
+}
+function buildSubnetTable(network, mask, cidr, broadcast){
+  if(cidr>30){ document.getElementById('divCard').classList.add('hidden'); return; }
+  const size = (1<<(32-cidr))>>>0;
+  const rows = [
+    `<tr style="color:var(--text-dim);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;">
+      <th style="padding:0.5rem 0.75rem;text-align:left;">#</th>
+      <th style="padding:0.5rem 0.75rem;text-align:left;">Network</th>
+      <th style="padding:0.5rem 0.75rem;text-align:left;">First Host</th>
+      <th style="padding:0.5rem 0.75rem;text-align:left;">Last Host</th>
+      <th style="padding:0.5rem 0.75rem;text-align:left;">Broadcast</th>
+      <th style="padding:0.5rem 0.75rem;text-align:right;">Hosts</th>
+    </tr>`
+  ];
+  let cur = network;
+  for(let i=0;i<8;i++){
+    const brd = (cur+size-1)>>>0;
+    const fh = cur+1, lh=brd-1;
+    const usable = Math.max(0,lh-fh+1);
+    rows.push(`<tr style="border-top:1px solid var(--border)">
+      <td style="padding:0.5rem 0.75rem;color:var(--text-dim)">${i+1}</td>
+      <td style="padding:0.5rem 0.75rem;color:var(--accent)">${intToIp(cur)}/${cidr}</td>
+      <td style="padding:0.5rem 0.75rem;color:var(--accent2)">${cidr<=30?intToIp(fh):'—'}</td>
+      <td style="padding:0.5rem 0.75rem;color:var(--accent2)">${cidr<=30?intToIp(lh):'—'}</td>
+      <td style="padding:0.5rem 0.75rem;color:var(--danger)">${intToIp(brd)}</td>
+      <td style="padding:0.5rem 0.75rem;text-align:right">${usable.toLocaleString()}</td>
+    </tr>`);
+    cur = (brd+1)>>>0;
+  }
+  document.getElementById('divTable').innerHTML = rows.join('');
+}
+function getIPType(ip){
+  const a=(ip>>>24)&255, b=(ip>>>16)&255;
+  if(a===10) return 'Private (RFC1918)';
+  if(a===172&&b>=16&&b<=31) return 'Private (RFC1918)';
+  if(a===192&&b===168) return 'Private (RFC1918)';
+  if(a===127) return 'Loopback';
+  if(a===169&&b===254) return 'Link-Local (APIPA)';
+  if(a>=224&&a<=239) return 'Multicast';
+  if(a>=240) return 'Reserved';
+  return 'Public';
+}
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+function clearAll(){
+  document.getElementById('ipInput').value='';
+  document.getElementById('maskInput').value='';
+  document.getElementById('errorMsg').textContent='';
+  document.getElementById('ipInput').classList.remove('error');
+  document.getElementById('maskInput').classList.remove('error');
+  document.getElementById('resultsCard').classList.add('hidden');
+  document.getElementById('binaryCard').classList.add('hidden');
+  document.getElementById('divCard').classList.add('hidden');
+  document.querySelectorAll('.cidr-badge').forEach(x=>x.classList.remove('active'));
+}
+
+document.getElementById('ipInput').addEventListener('keydown', e=>{ if(e.key==='Enter') calculate(); });
+document.getElementById('maskInput').addEventListener('keydown', e=>{ if(e.key==='Enter') calculate(); });
+</script>
+</body>
+</html>
